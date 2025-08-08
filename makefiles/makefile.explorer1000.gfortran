@@ -1,0 +1,72 @@
+All: guangqi
+OBJ_DIR = obj
+VPATH = src:modules/problem
+
+objects = $(addprefix $(OBJ_DIR)/, datastructure.o mathlib.o phylib.o	\
+	constant_gamma_eos.o eos_h_he.o eos_h2_HI_HII.o eos_HI_HII.o eos_analytic.o \
+	eos_tabulated.o eos.o)
+objects += problem.o
+objects += $(addprefix $(OBJ_DIR)/, communication_1d.o communication_2d.o communication.o \
+	passivescalars.o radiation_common_functions.o 	\
+	boundary.o io_out.o io_in.o	\
+	exactriemann.o eosriemannsolver.o hllc.o eos_hllc_tabulated.o eos_hllc_analytic.o hydro.o \
+	gravity.o petsc_fld_1d.o petsc_fld_2d.o petsc_fld.o rt_formal_sol.o \
+	radiation.o cooling.o source_control.o \
+	recon_evolve.o viscous.o muscl.o hydroscheme.o rmhd.o)
+ieos ?= 1
+ieosmodule ?=1
+iopacity ?= 1
+isolver ?= 1
+iconverge ?= 0
+irecord ?= 0
+imodify ?= 0
+user_amr ?= 0
+usersource ?= 0
+include modules/problem/makefile.problem
+eosflag = -Dieos=$(ieos) -Dieosmodule=$(ieosmodule)
+opacityflag = -Diopacity=$(iopacity)
+solverflag = -Disolver=$(isolver)
+convergeflag = -Diconverge=$(iconverge)
+recordflag = -Direcord=$(irecord)
+ompfflag = -fopenmp
+amrflag = -Duser_amr=$(user_amr)
+modifyflag = -Dimodify=$(imodify)
+sourceflag = -Dusersource=$(usersource)
+guangqi_flags = $(eosflag) $(opacityflag) $(solverflag) $(convergeflag) $(ompfflag) $(recordflag) $(amrflag) \
+	$(sourceflag) $(modifyflag)
+
+CC = /apps/mpi/openmpi-4.1.4.-gcc12/bin/mpicc
+FC = /apps/mpi/openmpi-4.1.4.-gcc12/bin/mpif90
+
+PETSC_DIR=/home/chenzhuo/WORK/petsc
+
+#FFLAGS += ${PETSC_FC_INCLUDES} -cpp -ffree-line-length-512 -fcheck=all -g -O2 $(guangqi_flags)
+#FFLAGS += ${PETSC_FC_INCLUDES} -cpp -ffree-line-length-512 -fcheck=all -g -fbacktrace -O0 $(guangqi_flags)
+FFLAGS += ${PETSC_FC_INCLUDES} -cpp -ffree-line-length-512 -O3	$(guangqi_flags)
+
+include ${PETSC_DIR}/lib/petsc/conf/variables
+include ${PETSC_DIR}/lib/petsc/conf/rules
+HDF5 = /home/chenzhuo/WORK/hdf5
+openmpi = /apps/mpi/openmpi-4.1.4.-gcc12
+include_path += -I$(HDF5)/include -I$(openmpi)/include -I$(PETSC_DIR)/include
+blas = -lrefblas
+lapack = -llapack
+LIB_DIR = -L$(HDF5)/lib
+LIBS = -lhdf5 -lhdf5_fortran $(lapack) $(blas) -lm
+
+#$(info $$PETSC_LIB is [${PETSC_LIB}])
+#$(info $$FLINKER is [${FLINKER}])
+linker = $(FC) -fPIC $(FFLAGS)
+
+$(OBJ_DIR)/%.o: %.f90
+	${linker} ${PETSC_LIB} $(include_path) -c $< -o $@
+%.o: %.f90
+	${linker} ${PETSC_LIB} $(include_path) -c $< -o $@
+
+
+guangqi: $(objects)
+	${linker} $(objects) $(LIB_DIR) $(LIBS) ${PETSC_LIB} -o guangqi
+
+.PHONY: clean
+clean::
+	rm -f $(objects) *.mod guangqi gmon.out analysis.txt

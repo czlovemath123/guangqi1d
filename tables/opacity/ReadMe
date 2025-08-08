@@ -1,0 +1,96 @@
+J/A+A/568/A91     Gas opacity in circumstellar environments     (Malygin+, 2014)
+================================================================================
+Mean gas opacity for circumstellar environments and equilibrium temperature
+degeneracy.
+    Malygin M.G., Kuiper R., Klahr H., Dullemond C.P., Henning T.
+   <Astron. Astrophys. 568, A91 (2014)>
+   =2014A&A...568A..91M
+================================================================================
+ADC_Keywords: Interstellar medium ; Models
+Keywords: opacity - radiative transfer - methods: numerical
+
+Abstract:
+    In a molecular cloud dust opacity typically dominates over gas
+    opacity, yet in the vicinities of forming stars dust is depleted, and
+    gas is the sole provider of opacity. In the optically thin
+    circumstellar environments the radiation temperature cannot be assumed
+    to be equal to the gas temperature, hence the two-temperature Planck
+    means are necessary to calculate the radiative equilibrium.
+
+    By using the two-temperature mean opacity one does obtain the proper
+    equilibrium gas temperature in a circumstellar environment, which is
+    in a chemical equilibrium. A careful consideration of a radiative
+    transfer problem reveals that the equilibrium temperature solution can
+    be degenerate in an optically thin gaseous environment.
+
+    We compute mean gas opacities based on the publicly available code
+    DFSYNTHE by Kurucz and Castelli. We performed the calculations
+    assuming local thermodynamic equilibrium and an ideal gas equation of
+    state. The values were derived by direct integration of the
+    high-resolution opacity spectrum.
+
+Description:
+    The tables contain frequency averaged gas opacity for a wide range of
+    gas temperatures and pressures as well as for three different
+    metallicities. The first table contains Rosseland and Planck means.
+    The second table consists two-temperature Planck means, which can be
+    used when the radiation temperature is different from the gas
+    temperature, but a chemical equilibrium can be assumed. To be used in
+    radiative transfer modelling.
+
+File Summary:
+--------------------------------------------------------------------------------
+ FileName   Lrecl  Records   Explanations
+--------------------------------------------------------------------------------
+ReadMe         80        .   This file
+table1.dat     59    35532   Rosseland and Planck means for 94 temperatures,
+                             126 pressures and 3 metallicities
+table2.dat     52   355320   Two-temperature Planck means for 94 temperatures
+                             126 pressures, 3 metallicities and
+                             10 radiation temperatures
+--------------------------------------------------------------------------------
+
+Byte-by-byte Description of file: table1.dat
+--------------------------------------------------------------------------------
+   Bytes Format Units   Label    Explanations
+--------------------------------------------------------------------------------
+   2-  5  F4.1  [Sun]   [Me/H]   [-0.3/0.3] Metallicity (-0.3, 0.0, +0.3 ) (G1)
+   7- 13  I7    K       Tgas     [700/1e06] Gas temperature T_gas_
+  15- 23  E9.4  dPa     Pgas     [1e-09/7.2e+08] Gas pressure P_gas_ (dyn/cm^2^)
+  25- 33  E9.4  g/cm3   rho      Gas density {rho}
+  35- 46  E12.6 cm2/g   kR       Rosseland mean opacity {kappa}_R_
+  48- 59  E12.6 cm2/g   kP       Planck mean opacity {kappa}_P_
+--------------------------------------------------------------------------------
+
+Byte-by-byte Description of file: table2.dat
+--------------------------------------------------------------------------------
+   Bytes Format Units   Label    Explanations
+--------------------------------------------------------------------------------
+   2-  5  F4.1  [Sun]   [Me/H]   [-0.3/0.3] Metallicity (-0.3,0.0,+0.3) (G1)
+   7- 11  I5    K       Trad     [3000/50000] Radiation temperature T_rad_
+  13- 19  I7    K       Tgas     [700/1e+06] Gas temperature T_gas_
+  21- 29  E9.4  dPa     Pgas     [1e-09/7.2e+08] Gas pressure P_gas_ (dyn/cm^2^)
+  31- 39  E9.4  g/cm3   rho      Gas density {rho}
+  41- 52  E12.6 cm2/g   kP       Two-temperature Planck mean opacity
+                                 {kappa}_P_(T_rad_,T_gas_)
+--------------------------------------------------------------------------------
+
+Global notes:
+Note (G1): metallicity [Me/H] is a logarithm base 10 of the multiplicative
+  factor applied to atomic abundances of all the species but H and He.
+  The reference abundances (i.e. for [Me/H]=+0.0) are from Grevesse & Sauval
+  (1998SSRv...85..161G)
+--------------------------------------------------------------------------------
+
+Acknowledgements:
+   Mykola Malygin, malygin(at)mpia.de
+
+References:
+   Grevesse & Sauval, 1998SSRv...85..161G, Standard Solar Composition
+
+History:
+   * 26-Aug-2014 : on-line data
+   * 27-Aug-2014 : tables 1 and 2 corrected (from author)
+
+================================================================================
+(End)     Mykola Malygin [MPIA, Heidelberg], Patricia Vannier [CDS]  28-Jul-2014

@@ -1,0 +1,29 @@
+&parameters_1d
+    m_star=6d0                      !central mass in msun
+    lfld_mom=.true.
+    larad=.true.
+    dt_record=1d3
+    record_length=5
+    petsc_qratio=1.2
+    petsc_iter=6
+    floor_tauR=5d0                  !optical depth floor
+    inner_floor_temp=3d2
+    rho_floor=1d-17
+/
+&parameters_2d
+    disk_rho0=1d-17                 !circumstellar disk peak equator density
+    disk_temp0=5000d0               !circumstellar disk temperature
+    rin=2                           !inner disk cutoff in terms of the inner boundary radius
+    rout=0.3                        !outer disk cutoff in terms of the outer boundary radius
+    sig1=20                         !controls inner sigmoid width
+    sig2=20                         !controls outer sigmoid width
+    a=-2                            !power law disk density profile
+    b=-1                            !power law disk temperature profile
+    diffused_rho0=1d-17             !diffused ambient from normal massloss
+    diffused_focusing=0.25          !*pi is the s.t.d. of the gaussian dist. along theta
+    loutflow_focusing=.false.       !whether outflow has a gaussian distribution
+    outflow_focusing=0.25           !*pi is the s.t.d. of the gaussian dist. along theta
+    lam=.false.
+    lviscous=.false.
+    alpha_vis=0
+/

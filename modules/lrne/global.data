@@ -1,0 +1,60 @@
+$meshinfo               !mesh dimesnion, resolution, simulation length &
+!and boundary conditions
+    n_domain =  10,4000,0d0,0.5d0             !boundary location in numerical unit
+    lengthscale = 6.96e10                   !rsun
+    tfinal = 50                             !day=8.64d4
+    timescale = 86400                       !day
+    CFL = 0.8d0
+    v_boundary=0d0,0d0,0d0,0d0  !boundary velocity
+    hydro_bound_type = 9,1,2,2          !1=transmissive,2=reflective,3=periodic,4=diode,9=specified
+    rad_bound_type = 2,1,2,2       !1=transmissive,2=reflective,3=extrapolate,9=specified
+    passive_bound_type = 9,1,2,2
+    nframe = 200
+    refine_type = 'static'
+    nrefine_region = 1
+    nderefine_region = 0
+    max_refine_level = 10
+    restart = .false.
+    restart_iframe = 60
+/
+$phyinfo                !this part correspond to the formulation of &
+!governing hydrodynamic equations
+    h_ratio=0.74                  !hydrogen mass ratio
+    he_ratio=0.26                 !helium mass ratio
+    petsc_rtol=1d-10
+    llnx=.true.
+    xgeo_h=2.5d1
+    llny=.true.
+    ygeo_h=0.5d0
+    lrad_adv=.true.
+    lam_con=.true.
+/
+$global_parameters
+    igravity=1
+    igeometry=2                 !0 Cartesian, 1 cylindrical, 2 polar
+    icooling=0                  !0 no cooling, 1 NK-cooling
+    iradiation=4                !0 no radiation, 1 grey dust, 2 short characteristics, 4 fld
+    nd=2
+    nx=512
+    ny=32
+    blk_size_nx=32
+    blk_size_ny=32
+    maw=1d0
+    gamma_gas=1.4d0
+    path_tables='yourpath/guangqi1d/tables/opacity'
+/
+$refinement
+    refine_xmin=0d0
+    refine_xmax=10.1
+    refine_ymin=0d0
+    refine_ymax=0.5d0
+    level=1
+/
+$refinement
+    refine_xmin=0d0
+    refine_xmax=10d0
+    refine_ymin=0d0
+    refine_ymax=0.5d0
+    level=0
+/
+
