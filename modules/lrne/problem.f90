@@ -1,3 +1,5 @@
+!the time dependent ejecta is injected to the computational domain from the inner boundary
+!the ejecta information, including time, rho, vx, and temp are read in from bcinput.dat
 module problem
 use phylib
 use datastructure
@@ -5,9 +7,8 @@ use mathlib
 use eos
 implicit none
 real(8), dimension(5), protected :: w0,u0
-real(8), protected :: disk_temp0,egv0,E0,m_star,v_esc,rho_floor,      &
-    p0,ms,sd_theta,lct,t_ram,floor_tauR,disk_rho0,rin,rout,sig1,sig2,a,b,   &
-    tmax,diffused_rho0,diffused_focusing,outflow_focusing
+real(8), protected :: egv0,E0,m_star,v_esc,rho_floor,      &
+    p0,ms,sd_theta,lct,t_ram,floor_tauR,rin,rout,tmax,diffused_rho0,diffused_temp0
 logical, protected :: loutflow_focusing,lam,ex
 real(8), dimension(:), allocatable :: time,rho,v,temp,asym_outflow
 real(8), dimension(:,:), allocatable :: boundcond
@@ -25,12 +26,9 @@ subroutine initialize_problem()
     character(len=30) :: subdir1,subdir2
     character(len=5) :: str1,str2,str3,str4
     namelist /parameters_1d/ m_star,lfld_mom,larad,dt_record,record_length,   &
-        petsc_qratio,petsc_iter,floor_tauR,inner_floor_temp,rho_floor
-    namelist /parameters_2d/ disk_rho0,disk_temp0,rin,rout,sig1,sig2,a,b,diffused_rho0,diffused_focusing,   &
-        loutflow_focusing,outflow_focusing,lam,lviscous,alpha_vis
+        petsc_qratio,petsc_iter,floor_tauR,inner_floor_temp,diffused_rho0,diffused_temp0,rho_floor
     open(unit=11,file=trim(path_root)//'/problem.data',status='old',action='read')
     read(unit=11,nml=parameters_1d)
-    read(unit=11,nml=parameters_2d)
     close(11)
     if (.not.restart) lhis_overwrite=.true.
     if (refine_type=='adaptive'.or.refine_type=='mixed') then
@@ -57,10 +55,8 @@ subroutine initialize_problem()
     v=boundcond(:,2)
     rho=boundcond(:,3)
     temp=boundcond(:,4)
-    asym_outflow=boundcond(:,5)*pi
     tmax=maxval(time)
-    t_ram=0.01*day
-    wedge_polar=.true.
+    t_ram=0.01*day          !the first t_ram day will enforce gradErad=0
     lfloor_temp=.true.
     rho_thresh_petsc1=rho_floor
     rho_thresh_petsc2=rho_floor
@@ -74,11 +70,11 @@ subroutine initialize_problem()
     rout=n_domain(2)*rout
     tempfloorscale=1
     ms=m_star*msun
-    diffused_focusing=diffused_focusing*pi
+    !diffused_focusing=diffused_focusing*pi
     sig_rosseland_floor=floor_tauR/n_domain(2)
     central_star%core%mass=m_star*msun
     v_esc=sqrt(2*gr*m_star*msun/n_domain(1))
-    sd_theta=sd_theta*pi
+    !sd_theta=sd_theta*pi
     !call update_time_sys(timescale,dt_record)
     time_sys%dt_record=dt_record
     lct=n_domain(2)/c_light         !light crossing time
@@ -90,11 +86,11 @@ subroutine initialize_problem()
 end subroutine initialize_problem
 
 subroutine read_file(filename,boundcond,ncols)
-    character(len=*), intent(in) :: filename            ! Input file name
-    real(8), dimension(:,:), allocatable :: boundcond   ! Array to store lines
-    integer :: num_rows                                 ! Number of rows in the file
+    character(len=*), intent(in) :: filename            ! input file name
+    real(8), dimension(:,:), allocatable :: boundcond   ! array to store lines
+    integer :: num_rows                                 ! number of rows in the file
     integer :: io_status,i,unit_number,ncols
-    real(8), allocatable :: line(:)                       ! Temporary buffer for reading lines
+    real(8), allocatable :: line(:)                       ! temporary buffer for reading lines
     character(len=32), allocatable :: header(:)
     character(len=32) :: form1,form2
     character(len=1) strncols
@@ -102,9 +98,9 @@ subroutine read_file(filename,boundcond,ncols)
     open(newunit=unit_number, file=filename, status='old', action='read')
     allocate(line(ncols),header(ncols))
     write(strncols, '(i1)' ) ncols
-    form1='('//strncols//'A16)'
-    form2='('//strncols//'ES16.8E2)'
-    ! First pass: Count the number of rows
+    form1='('//strncols//'a16)'
+    form2='('//strncols//'es16.8e2)'
+    ! first pass: count the number of rows
     read(unit_number,trim(form1)) header
     num_rows = 0
     do
@@ -112,12 +108,12 @@ subroutine read_file(filename,boundcond,ncols)
       if (io_status /= 0) exit
       num_rows = num_rows + 1
     end do
-    ! Allocate the array to hold the lines
+    ! allocate the array to hold the lines
     allocate(boundcond(num_rows,ncols))
-    ! Rewind the file to read the lines again
+    ! rewind the file to read the lines again
     rewind(unit_number)
     read(unit_number,trim(form1)) header
-    ! Second pass: Read the lines into the array
+    ! second pass: read the lines into the array
     do i = 1, num_rows
       read(unit_number,trim(form2)) boundcond(i,:)
     end do
@@ -128,20 +124,22 @@ end subroutine read_file
 !*****************************************************initial conditions*************************************************
 
 subroutine initial_hydro(blk,i,j)
+    !initial hydro condition
+    !w(1:5) are rho, vx, vy, vz, and Etotal, respectively
     type(blockdef), pointer :: blk
     integer :: i,j
-    real(8) :: pos(3),t,w(5),u(5),temp,egv,r0,rr,r,theta
+    real(8) :: pos(3),t,w(5),u(5),temp,egv,r0,rr,r
     r=blk%x_center(i)
-    theta=pi/2
-    w(1)=max(disk_rho(r,theta),rho_floor)
-    w(2)=disk_vx(r,theta)
+    w(1)=max(diffused_rho(r),rho_floor)
+    w(2)=diffused_vx(r)
     w(3:4)=0d0
-    temp=disk_temp(r,theta)
+    temp=diffused_temp(r)
     w(5)=prhot(w(1),temp)
     call assign_w_to_u_cell(blk,w,i,j)
 end subroutine initial_hydro
 
 subroutine initial_rad(blk,i,j)
+    !initial radiation condition, it is simply Erad=aT^4
     type(blockdef), pointer :: blk
     integer :: i,j
     real(8) :: temp
@@ -155,50 +153,30 @@ subroutine initial_scalar(blk,i,j)
     integer :: i,j,ip_am
 end subroutine initial_scalar
 
-function disk_rho(r,theta)
-    real(8) :: r,theta,disk_rho,r0,r1,sigmoid1,sigmoid2,x
+function diffused_rho(r)
+    !initial condition density
+    real(8) :: diffused_rho,r,r0
     r0=n_domain(1)
-    sigmoid1=1/(1+exp(-sig1*(r-rin)/rin))
-    sigmoid2=1/(1+exp(sig2*(r-rout)/rout))
-    x=(ms*gr/r + disk_temp0*kb/mh*(r/r0)**b*(b + r*(1 + exp(-sig1*(r - rin)/rin))*(exp(sig2*(r - rout)/rout) + 1)*   &
-        (a*disk_rho0*(r/r0)**a/(r*(1 + exp(-sig1*(r - rin)/rin))*(exp(sig2*(r - rout)/rout) + 1)) + sig1*disk_rho0*(r/r0)**a*   &
-        exp(-sig1*(r - rin)/rin)/(rin*(1 + exp(-sig1*(r - rin)/rin))**2*(exp(sig2*(r - rout)/rout) + 1)) - sig2*disk_rho0*(r/r0) &
-        **a*exp(sig2*(r - rout)/rout)/(rout*(1 + exp(-sig1*(r - rin)/rin))*(exp(sig2*(r - rout)/rout) + 1)**2))/  &
-        (disk_rho0*(r/r0)**a)))/(disk_temp0*kb/mh*(r/r0)**b)
-    disk_rho=disk_rho0*pow(r/r0,a)*sigmoid1*sigmoid2*pow(sin(theta),x)
-end function disk_rho
-
-function disk_vx(r,theta)
-    real(8) :: r,theta,disk_vx
-    disk_vx=0d0
-end function disk_vx
-
-function disk_temp(r,theta)
-    real(8) :: r,theta,disk_temp,r0
-    r0=n_domain(1)
-    disk_temp=disk_temp0*(r/r0)**b
-end function disk_temp
-
-function diffused_rho(r,theta)
-    real(8) :: diffused_rho,r,r0,theta
-    r0=n_domain(1)
-    diffused_rho=diffused_rho0*(r/r0)**(-1.5)*gaussian(theta,pi/2,diffused_focusing)
+    diffused_rho=diffused_rho0*(r/r0)**(-1.5)
 end function diffused_rho
 
-function diffused_vx(r,theta)
-    real(8) :: diffused_vx,r,theta
+function diffused_vx(r)
+    !initial condition vr
+    real(8) :: diffused_vx,r
     diffused_vx=sqrt(2*ms*gr/r)
 end function diffused_vx
 
-function diffused_temp(r,theta)
-    real(8) :: diffused_temp,r,r0,theta
+function diffused_temp(r)
+    !initial condition temperature
+    real(8) :: diffused_temp,r,r0
     r0=n_domain(1)
-    diffused_temp=disk_temp0*(r/r0)**b
+    diffused_temp=diffused_temp0*(r/r0)**(-1d0)
 end function diffused_temp
 
 !*****************************************************boundary conditions*************************************************
 
 subroutine boundary_hydro(blk,i,j)
+    !hydro boundary condition, including inner and outer)
     type(blockdef), pointer :: blk
     integer :: i,j
     real(8) :: r,theta,t,w(5),u(5),temp,egv
@@ -216,6 +194,8 @@ subroutine boundary_hydro(blk,i,j)
 end subroutine boundary_hydro
 
 subroutine boundary_rad(blk,i,j)
+    !radiation boundary condition, including inner and outer
+    !only effective when the corresponding rad_bound_type=9
     type(blockdef), pointer :: blk
     integer :: i,j
     real(8) :: v,r,r1,theta,temp,t
@@ -234,6 +214,7 @@ subroutine boundary_rad(blk,i,j)
 end subroutine boundary_rad
 
 subroutine boundary_scalar(blk,i,j)
+    !passive scalar, this function in this version of the code is no complete
     type(blockdef), pointer :: blk
     real(8) :: r,theta,rho,l_omega
     integer :: i,j,ip_am
@@ -242,16 +223,19 @@ end subroutine boundary_scalar
 !*******************time dependent boundary conditions**************************************************************
 
 function vej(t)
+    !time dependent velocity of the ejecta
     real(8) :: vej,t
     call interpolation_linear(t,vej,time,v)
 end function vej
 
 function rhoej(t)
+    !time dependent density of the ejecta
     real(8) :: rhoej,t
     call interpolation_linear(t,rhoej,time,rho)
 end function rhoej
 
 function tempej(t)
+    !time dependent temperature of the ejecta
     real(8) :: tempej,t
     call interpolation_linear(t,tempej,time,temp)
 end function tempej
@@ -259,6 +243,7 @@ end function tempej
 !end of time dependent boundary conditions
 
 subroutine time_dependent_bound_type()
+    !called in src/boundary.f90, can be used to modify the boundary condition in computation
     real(8) :: t,temp_inner,v
     integer :: i
     t=time_sys%t
@@ -282,6 +267,8 @@ subroutine time_dependent_bound_type()
 end subroutine time_dependent_bound_type
 
 subroutine assemble_record_array(record_array)
+    !called in rmhd.f90, it is used to record high frequency data, the time interval is dt_record
+    !the length of record_array is record_length, and it must be larger than the actual data length
     type(blockdef), pointer :: blk
     real(8), allocatable :: record_array(:)
     real(8) :: sample_r(2),v
@@ -300,9 +287,21 @@ subroutine assemble_record_array(record_array)
 end subroutine assemble_record_array
 
 subroutine problem_oper()
+    !called in rmhd.f90, after each hydro and radiation transport step,
+    !it can be used to modify data
 end subroutine problem_oper
 
 subroutine finalize_problem()
 end subroutine finalize_problem
+
+function user_kp(rho,Erad,tgas)
+    !user defined planck mean opacity, when iopacity=3
+    real(8) :: user_kp,rho,Erad,tgas
+end function user_kp
+
+function user_kr(rho,tgas)
+    !user defined Rosseland mean opacity, when iopacity=3
+    real(8) :: user_kr,rho,tgas
+end function user_kr
 
 end module problem

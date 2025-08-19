@@ -58,10 +58,7 @@ def save_model(model,modeldir,eos='gamma'):
     source_file = 'output_var_info.dat'
     destination = modeldir+'/output_var_info.dat'
     shutil.copy(source_file, destination)
-    if (eos=='gamma'):
-        source_file = 'guangqi'
-    elif (eos=='hhe'):
-        source_file = 'guangqi_hhe'
+    source_file = 'guangqi'
     destination = modeldir+'/'+modeldir
     shutil.copy(source_file, destination)
     print(f"Directory '{modeldir}' created successfully!")
@@ -100,6 +97,5 @@ def save_problem(modeldir):
 model=model_class(ms=6,rin=10,time=1,v=1.01,mdot=1,alpha=0.18,n=10000)
 i=3
 model_directory='model'+str(i).zfill(2)
-#save_model(model,modeldir=model_directory)
-save_model(model,modeldir=model_directory,eos='hhe')
+save_model(model,modeldir=model_directory)
 save_problem(modeldir=model_directory)

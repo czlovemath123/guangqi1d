@@ -1,0 +1,5 @@
+ieos = 2		#ieos=1 gamma gas, ieos=2 realistic eos
+ieosmodule = 3		#1=all hydrogen species, 2=HI and HII, 3=hydrogen and helium, 4=H2 and HI
+isolver = 2		#isolver=1 gamma gas isolver=2 realistic eos
+iopacity = 1		#1=realistic opacity table, 3=user defined
+irecord = 1		#1=record high frequency data, 0=not recording

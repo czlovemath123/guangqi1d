@@ -4,42 +4,42 @@ $meshinfo               !mesh dimesnion, resolution, simulation length &
     lengthscale = 6.96e10                   !rsun
     tfinal = 50                             !day=8.64d4
     timescale = 86400                       !day
-    CFL = 0.8d0
-    v_boundary=0d0,0d0,0d0,0d0  !boundary velocity
-    hydro_bound_type = 9,1,2,2          !1=transmissive,2=reflective,3=periodic,4=diode,9=specified
-    rad_bound_type = 2,1,2,2       !1=transmissive,2=reflective,3=extrapolate,9=specified
+    CFL = 0.8d0                             !CFL condition, <1
+    v_boundary=0d0,0d0,0d0,0d0              !boundary velocity, not used now
+    hydro_bound_type = 9,1,2,2              ![xl,xu,yl,yu], 1=transmissive,2=reflective,3=periodic,4=diode,9=specified
+    rad_bound_type = 2,1,2,2                ![xl,xu,yl,yu], 1=free,2=reflective,3=extrapolate,9=specified
     passive_bound_type = 9,1,2,2
-    nframe = 200
-    refine_type = 'static'
-    nrefine_region = 1
-    nderefine_region = 0
-    max_refine_level = 10
-    restart = .false.
-    restart_iframe = 60
+    nframe = 200                            !last frame number
+    refine_type = 'static'                  !static=smr, adaptive=amr, mixed=smr+amr, smr is suggested
+    nrefine_region = 1                      !number of refine region, n $refinement will be readin
+    nderefine_region = 0                    !number of derefine region, not important here
+    max_refine_level = 10                   !max allowed refinement level
+    restart = .false.                       !restart or not
+    restart_iframe = 60                     !restart from ith frame
 /
 $phyinfo                !this part correspond to the formulation of &
 !governing hydrodynamic equations
-    h_ratio=0.74                  !hydrogen mass ratio
-    he_ratio=0.26                 !helium mass ratio
-    petsc_rtol=1d-10
-    llnx=.true.
-    xgeo_h=2.5d1
-    llny=.true.
-    ygeo_h=0.5d0
-    lrad_adv=.true.
-    lam_con=.true.
+    h_ratio=0.74                    !hydrogen mass ratio
+    he_ratio=0.26                   !helium mass ratio
+    petsc_rtol=1d-10                !relative error of the residual of the iterative solver
+    llnx=.true.                     !geometric cell size along x coordinate
+    xgeo_h=2.5d1                    !dx_max_coor/dx_min_coor
+    llny=.true.                     !geometric cell size along y coordinate
+    ygeo_h=0.5d0                    !dx_max_coor/dx_min_coor
+    lrad_adv=.true.                 !turn on radiation advection source term
+    lam_con=.true.                  !angular momentum conservation, 2d feature
 /
 $global_parameters
     igravity=1
-    igeometry=2                 !0 Cartesian, 1 cylindrical, 2 polar
-    icooling=0                  !0 no cooling, 1 NK-cooling
-    iradiation=4                !0 no radiation, 1 grey dust, 2 short characteristics, 4 fld
-    nd=2
-    nx=512
-    ny=32
-    blk_size_nx=32
-    blk_size_ny=32
-    maw=1d0
+    igeometry=2                     !0 Cartesian, 1 cylindrical, 2 polar
+    icooling=0                      !0 no cooling, 1 NK-cooling
+    iradiation=4                    !0 no radiation, 1 grey dust, 2 short characteristics, 4 fld
+    nd=1                            !guangqi is a 2D code, nd=1 means 1D
+    nx=512                          !base resolution in x coordinate
+    ny=32                           !base resolution in y coordinate
+    blk_size_nx=32                  !block size in x coordinate
+    blk_size_ny=32                  !block size in y coordinate
+    maw=1d0                         !mean atomic weight
     gamma_gas=1.4d0
     path_tables='yourpath/guangqi1d/tables/opacity'
 /
