@@ -1,0 +1,34 @@
+# build artifacts
+obj/
+*.o
+*.mod
+guangqi
+gmon.out
+analysis.txt
+result.txt
+temp.data
+
+# generated run outputs
+history.data
+last.dat
+output_var_info.dat
+*.session*
+*.bk
+
+# regenerable media
+*.png
+*.pdf
+*.gif
+*.mp4
+*.zip
+*.xml
+
+# python cache
+*.pyc
+__pycache__/
+
+# run sandbox dirs (h5 outputs, logs, pictures)
+modules/*/*/
+
+# agent tooling state
+.zcode/

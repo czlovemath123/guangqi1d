@@ -1,0 +1,53 @@
+$meshinfo               !mesh dimesnion, resolution, simulation length &
+!and boundary conditions
+    n_domain =  1.0,10.0,0d0,0d0     !boundary location in cm, it is [x_in, x_out, y_in, y_out]
+    lengthscale = 12.14d9
+    tfinal = 4e6                            !end time of the simulation in second
+    timescale = 1d0                         !set this value to be 1
+    CFL = 0.6d0                             !The CFL condition parameter
+    v_boundary=0d0,0d0,0d0,0d0              !boundary velocity, used if the boundary is moving
+    hydro_bound_type = 2,9,1,1              !1=transmissive,2=reflective,3=periodic,4=diode,9=specified
+    rad_bound_type = 2,1,0,0                !1=transmissive,2=reflective,3=extrapolate,8=fixed radiation flux,9=specified
+    passive_bound_type = 2,9,9,9            !should be the same with hydro_bound_type
+    nframe = 200                            !last frame number
+    refine_type = 'static'                  !'static', 'adaptive', 'mixed', or 'none'
+    nrefine_region = 1                      !how many static mesh refine regions are there?
+    nderefine_region = 0
+    max_refine_level = 11                   !maximum level of refinement
+    restart = .false.                       !resume calculation from restart frame
+    restart_iframe = 28                    !the number of the restart frame
+/
+$phyinfo                !this part correspond to the formulation of &
+!governing hydrodynamic equations
+    h_ratio=0.74d0                          !hydrogen mass ratio
+    he_ratio=0.26d0                         !helium mass ratio
+    petsc_rtol=1d-10                         !petsc convergence criterion
+    llnx=.true.                             !whether to use logrithmic grid along the x coordinate
+    xgeo_h=1d1                              !the size ratio between the cell at n_domain(2) and n_domain(1)
+    llny=.false.                            !whether to use logrithmic grid along the y coordinate
+    ygeo_h=0.96                             !the size ratio between the cell at n_domain(4) and n_domain(3)
+    lrad_adv=.false.                        !do we calculate the advection of radiation
+    lam_con=.false.                         !do we enforce angular momentum conservation
+/
+$global_parameters
+    igravity=1                              !1=central gravity, 2=uniform gravity
+    igeometry=2                             !0=Cartesian, 1=cylindrical, 2=sphierical
+    icooling=0                              !0 no cooling, 1 NK-cooling
+    iradiation=4                            !0 no radiation, 4 fld
+    nd=1                                    !dimension of the simulation
+    nx=256                                  !base grid number in x coordinate
+    ny=1                                    !base grid number in y coordinate
+    blk_size_nx=32                          !block size in x coordinate
+    blk_size_ny=1                           !block size in y coordinate
+    maw=2.29d0                              !mean atomic weight of gamma-law gas
+    gamma_gas=1.44d0                        !gamma-law gas
+    path_tables='/path/to/guangqi1d/tables/opacity'
+/
+$refinement
+    refine_xmin=1d0                      !x_min of this refinement zone
+    refine_xmax=1.4d0                     !x_max of this refinement zone
+    refine_ymin=0d0                         !y_min of this refinement zone
+    refine_ymax=0d0                         !y_max of this refinement zone
+    level=3                                !level of this refinement zone
+/
+

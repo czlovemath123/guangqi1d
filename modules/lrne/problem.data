@@ -1,0 +1,18 @@
+&parameters_1d
+    m_star=15d0                     !central mass in msun
+    lfld_mom=.true.                 !whether to calculate Frad
+    larad=.true.                    !on/off of arad
+    dt_record=1d3
+    record_length=5
+    petsc_qratio=1.2                !ddt(m+1)=petsc_qratio*ddt(m)
+    petsc_iter=6                    !how many subcycles
+    floor_tauR=5d0                  !optical depth floor
+    inner_floor_temp=3d2
+    rho_floor=1d-17
+    post_ej_bound='transmissive'    !see problem.f90 for description
+    t_ram=0.5                       !the first t_ram day will set rad_bound_type(1)=8
+    lpradgradv=.false.              !on/off of Pr:gradv term
+    rho0=1d-17
+    temp0=5000d0
+    ejection_rad_bc_type=8          !adjust the time-dependent inner boundary condition for radiation
+/

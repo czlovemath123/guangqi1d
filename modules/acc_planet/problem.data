@@ -1,0 +1,14 @@
+&rhd_quantities
+    acc_rate=1d-3               !accretion rate in earth mass per year
+    m_planet=0.3d0                  !planetary mass in Jupiter mass
+    kh_timescale=5e5             !in years
+    petsc_iter=8                !the time of sub-iteration of the radiation transport step
+    petsc_qratio=1.4
+    p_bottom_ratio=2d1          !p_thresh/pram
+    xtff=0.5
+    lfld_heating=.false.        !have heating or not
+    lchange_dust_opacity=.true.        !false will use Semenov's dust opacity table
+    kr_ratio=1d0                       !if lchange_dust_opacity=.true., the dust opacity multiplies the coefficient
+    kp_ratio=1d0
+/
+
