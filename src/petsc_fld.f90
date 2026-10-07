@@ -27,7 +27,7 @@ subroutine petsc_fld_initialize(userctx,ierr)
     cv_thresh=rho_thresh_petsc1*kb/(gamma_gas-1)/maw/amu
     Ntot=2*nblk_total*blk_size_nx
     n_local_rows=2*np_nblk(rank+1)*blk_size_nx
-    call MatCreateAIJ(PETSC_COMM_WORLD,n_local_rows,n_local_rows,Ntot,Ntot,4,PETSC_NULL_INTEGER,1,PETSC_NULL_INTEGER,A,ierr)!;petsccall(ierr)
+    call MatCreateAIJ(PETSC_COMM_WORLD,n_local_rows,n_local_rows,Ntot,Ntot,4,PETSC_NULL_INTEGER_ARRAY,1,PETSC_NULL_INTEGER_ARRAY,A,ierr)!;petsccall(ierr)
     call VecCreateMPI(PETSC_COMM_WORLD,n_local_rows,Ntot,b,ierr)!;petsccall(ierr)
     call VecDuplicate(b,x,ierr)!;petsccall(ierr)
     call KSPCreate(PETSC_COMM_WORLD,ksp,ierr)!;petsccall(ierr)
@@ -250,7 +250,7 @@ subroutine petsc_fld_check_positivity(x,A)
     processor%processor_logical=.false.
     processor%global_logical=.false.
     processor%processor_nan=.false.
-    call VecGetArrayReadF90(x,g,ierr)
+    call VecGetArrayRead(x,g,ierr)
     blk=>llist_head
     outer2:  do k=1,np_nblk(rank+1)
         blk_id=blk%blk_id-llist_head%blk_id+1
@@ -276,7 +276,7 @@ subroutine petsc_fld_check_positivity(x,A)
         end do
         blk=>blk%next
     end do outer2
-    call VecRestoreArrayReadF90(x,g,ierr)
+    call VecRestoreArrayRead(x,g,ierr)
     call mpi_gather(processor%processor_logical,1,MPI_LOGICAL,processor%global_logical,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
     if (rank==0) processor%petsc_decrease_rtol=.not.(all(processor%global_logical))
     call mpi_bcast(processor%petsc_decrease_rtol,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
@@ -289,7 +289,7 @@ subroutine petsc_accept_result(x,ddt)
     integer :: i,j,k,ierr,blk_id,II,key(3)
     real(8) :: maxtemp_pre,maxtemp_after,r1,r2,q,dx,dt,ddt
     dt=time_sys%dt_radhydro
-    call VecGetArrayReadF90(x,g,ierr)
+    call VecGetArrayRead(x,g,ierr)
     blk=>llist_head
     do k=1,np_nblk(rank+1)
         blk_id=blk%blk_id-llist_head%blk_id+1
@@ -308,12 +308,14 @@ subroutine petsc_accept_result(x,ddt)
         blk=>blk%next
     end do
     nullify(blk)
-    call VecRestoreArrayReadF90(x,g,ierr)
+    call VecRestoreArrayRead(x,g,ierr)
 end subroutine petsc_accept_result
 
 subroutine petsc_set_ksp(ksp,rtol)
     KSP ksp
-    KSP, allocatable, dimension(:) :: subksp
+    ! PCGASMGetSubKSP returns a pointer into the PC's internal sub-KSP array
+    ! (PETSc >= 3.22 Fortran bindings require a pointer here, not allocatable)
+    KSP, pointer, dimension(:) :: subksp
     PC pc,subpc
     real(8) :: rtol
     integer :: ierr,i,nlocal,first
@@ -329,11 +331,10 @@ subroutine petsc_set_ksp(ksp,rtol)
         call KSPSetTolerances(ksp,rtol,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,PETSC_DEFAULT_INTEGER,ierr)!;petsccall(ierr)
         call KSPGetPC(ksp,pc,ierr)!;petsccall(ierr)
         call PCSetType(pc,PCGASM,ierr)
-        call PCGASMSetType(pc,PC_ASM_RESTRICT,ierr)
-        !call PCGASMSetType(pc,PC_ASM_INTERPOLATE,ierr)
+        call PCGASMSetType(pc,PC_GASM_RESTRICT,ierr)
+        !call PCGASMSetType(pc,PC_GASM_INTERPOLATE,ierr)
         call PCGASMSetOverlap(pc,1,ierr)
         call KSPsetup(ksp,ierr)
-        nlocal=1;allocate(subksp(nlocal))
         call PCGASMGetSubKSP(pc,nlocal,first,subksp,ierr)
         do i=1,nlocal
             call KSPGetPC(subksp(i),subpc,ierr)
@@ -344,7 +345,6 @@ subroutine petsc_set_ksp(ksp,rtol)
             !call KSPSetType(subksp(i),KSPBCGS,ierr); CHKERRA(ierr)
             call KSPSetTolerances(subksp(i),rtol/np,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,PETSC_DEFAULT_INTEGER,ierr)!;petsccall(ierr)
         end do
-        deallocate(subksp)
     end if
 end subroutine petsc_set_ksp
 

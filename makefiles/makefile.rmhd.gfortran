@@ -24,12 +24,11 @@ guangqi_flags = $(foreach var,\
 	ieos ieosmodule iopacity isolver openmp irecord imodify isource_order usersource user_amr,\
 	-D$(var)=$($(var)))
 
-# Installation roots. Override via environment variables or the make command
-# line, e.g.:  export PETSC_DIR=$HOME/opt/petsc   or:  make PETSC_DIR=...
-PETSC_DIR ?= /path/to/petsc
-ifeq ($(wildcard ${PETSC_DIR}/lib/petsc/conf/variables),)
-$(error PETSC_DIR is not set correctly -- point it at your PETSc installation, e.g. export PETSC_DIR=$$HOME/opt/petsc)
-endif
+# Dependencies built by ./install_deps.sh into <repo>/guangqi-deps (override:
+#   make DEPS_DIR=/path/to/deps, or export GUANGQI_DEPS before sourcing env.sh).
+GUANGQI_DEPS ?= $(CURDIR)/guangqi-deps
+DEPS_DIR = $(GUANGQI_DEPS)
+PETSC_DIR = $(DEPS_DIR)
 include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules
 FC = mpif90
@@ -38,10 +37,10 @@ FC = mpif90
 #FFLAGS += ${PETSC_FC_INCLUDES} -cpp -ffree-line-length-512 -fcheck=all -g -fbacktrace -O0 $(guangqi_flags)
 FFLAGS += ${PETSC_FC_INCLUDES} -cpp -ffree-line-length-512 -O3	$(guangqi_flags)
 
-#HDF5 and OpenMPI installation roots (override like PETSC_DIR if in non-standard locations)
-HDF5 ?= /usr/local/hdf5
-openmpi ?= /usr/local/openmpi
-include_path += -I$(HDF5)/include -I$(openmpi)/include -I$(PETSC_DIR)/include
+#guangqi's environment
+HDF5 = $(DEPS_DIR)
+openmpi = $(DEPS_DIR)
+include_path += -I$(HDF5)/include -I$(openmpi)/include -I$(openmpi)/lib -I$(PETSC_DIR)/include
 blas = -lrefblas
 lapack = -llapack
 LIB_DIR = -L$(HDF5)/lib
@@ -50,7 +49,10 @@ LIBS = -lhdf5 -lhdf5_fortran $(lapack) $(blas) -lm
 COMPILE = $(FC) -fPIC $(FFLAGS) $(include_path) -J$(OBJ_DIR) -I$(OBJ_DIR)
 LINK = $(FC) -fPIC $(FFLAGS)
 
-$(OBJ_DIR)/%.o: %.f90
+$(OBJ_DIR):
+	mkdir -p $(OBJ_DIR)
+
+$(OBJ_DIR)/%.o: %.f90 | $(OBJ_DIR)
 	$(COMPILE) -c $< -o $@
 guangqi: $(objects)
 	${LINK} $(objects) $(LIB_DIR) $(LIBS) ${PETSC_LIB} -o guangqi

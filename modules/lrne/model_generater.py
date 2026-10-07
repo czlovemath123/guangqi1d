@@ -24,9 +24,9 @@ class Config:
     rout = 10000
     tfinal = 160
     nframe = 100
-    nx = 512*2
+    nx = 512
     xratio = 80
-    level = 1
+    level = 2
     ejt = 32                   # Total ejection time (days)
     gamma_eos = 1.4
     iradiation = 4
@@ -283,8 +283,9 @@ class fittingModel:
                 raise AttributeError(f"fittingModel has no parameter '{key}'")
 
         self.v_esc = sqrt(2 * G * self.ms / self.r)
-        print(f"Escape velocity: {self.v_esc:.2e} cm/s")
-        print(f"Stellar radius: {self.r/rsun:.1f} Rsun")
+        if not os.environ.get('MODELG_QUIET'):
+            print(f"Escape velocity: {self.v_esc:.2e} cm/s")
+            print(f"Stellar radius: {self.r/rsun:.1f} Rsun")
     
     def vej(self, t):
         

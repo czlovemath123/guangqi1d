@@ -1,6 +1,5 @@
-import os
 import sys
-sys.path.insert(1, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'scripts'))
+sys.path.insert(1,'/media/zhuo/enceladus/projects/guangqi2d/scripts')
 from assemble_1d_data import *
 from math import *
 import matplotlib

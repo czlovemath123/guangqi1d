@@ -132,7 +132,8 @@ Subcommands (in pipeline order; `all` runs everything):
 | `vhist` | `best_vhist.png` — mass-weighted velocity histograms at t = 0, 50, 100 d |
 | `escmass` | `escape_mass.png` — escaping mass (`0.5 v^2 > G*M/r`, `M = 8.5 Msun`) and its evolution |
 
-Typical session (any Python 3 environment with numpy and matplotlib):
+Typical session (any Python 3 with numpy and matplotlib, e.g. the repo-side
+`myenv` virtualenv):
 
 ```bash
 python abao.py init

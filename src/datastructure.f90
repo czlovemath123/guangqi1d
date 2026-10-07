@@ -351,6 +351,8 @@ type table2d
     real(8), dimension(:,:), allocatable :: t2d          !values of the table
     real(8), dimension(:), allocatable :: xlist,ylist    !lists of sampled points
     real(8) :: dx,dy                                     !space of sampled points
+    logical :: xuniform=.false.,yuniform=.false.         !axis spacing uniform -> O(1) bracket lookup
+    real(8) :: dx_inv,dy_inv                             !1/dx, 1/dy cached when the axis is uniform
     integer :: nd1,nd2                                  !sampled points
 end type table2d
 

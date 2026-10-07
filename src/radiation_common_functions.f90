@@ -104,7 +104,9 @@ subroutine readin_gas_opacity_tables()
     planck_gas_opacity_table%xlist=tgas_table
     planck_gas_opacity_table%ylist=pres_table
     planck_gas_opacity_table%nd1=nt_table
-    planck_gas_opacity_table%nd1=npres_table
+    planck_gas_opacity_table%nd2=npres_table
+    call set_opacity_axis_flags(rosseland_gas_opacity_table)
+    call set_opacity_axis_flags(planck_gas_opacity_table)
     deallocate(pres_table,tgas_table,kappa_R_trim,kappa_P_trim)
 end subroutine readin_gas_opacity_tables
 
@@ -150,8 +152,121 @@ subroutine readin_dust_opacity()
     planck_dust_opacity_table%xlist=t_table
     planck_dust_opacity_table%ylist=rho_table
     planck_dust_opacity_table%nd1=nt
-    planck_dust_opacity_table%nd1=nrho
+    planck_dust_opacity_table%nd2=nrho
+    call set_opacity_axis_flags(rosseland_dust_opacity_table)
+    call set_opacity_axis_flags(planck_dust_opacity_table)
 end subroutine readin_dust_opacity
+
+subroutine set_opacity_axis_flags(tab)
+    !detect uniform log10 spacing per axis so the lookup can index in O(1);
+    !tolerance is 1% of the step because file-rounded coordinates jitter
+    !(e.g. the gas table's 4-digit pressures jitter by ~1e-3 of a step)
+    type(table2d), intent(inout) :: tab
+    integer :: i,nx,ny
+    real(8) :: d,dev,tol
+    if (allocated(tab%xlist)) then
+        nx=size(tab%xlist)
+        if (nx>1) then
+            tab%dx=(tab%xlist(nx)-tab%xlist(1))/dble(nx-1)
+            if (tab%dx>0d0) then
+                dev=0d0
+                do i=2,nx
+                    d=abs(tab%xlist(i)-(tab%xlist(1)+dble(i-1)*tab%dx))
+                    if (d>dev) dev=d
+                end do
+                tol=1d-2*tab%dx
+                if (dev<tol) then
+                    tab%xuniform=.true.
+                    tab%dx_inv=1d0/tab%dx
+                end if
+            end if
+        end if
+    end if
+    if (allocated(tab%ylist)) then
+        ny=size(tab%ylist)
+        if (ny>1) then
+            tab%dy=(tab%ylist(ny)-tab%ylist(1))/dble(ny-1)
+            if (tab%dy>0d0) then
+                dev=0d0
+                do i=2,ny
+                    d=abs(tab%ylist(i)-(tab%ylist(1)+dble(i-1)*tab%dy))
+                    if (d>dev) dev=d
+                end do
+                tol=1d-2*tab%dy
+                if (dev<tol) then
+                    tab%yuniform=.true.
+                    tab%dy_inv=1d0/tab%dy
+                end if
+            end if
+        end if
+    end if
+end subroutine set_opacity_axis_flags
+
+pure subroutine fld_kappa_interp_2d(tab,x,y,val)
+    !bilinear interpolation on table2d with O(1) bracketing on uniform axes
+    !and binary-search fallback; clamping matches interpolation2d_linear
+    type(table2d), intent(in) :: tab
+    real(8), intent(in) :: x,y
+    real(8), intent(out) :: val
+    integer :: i,j,lo,hi,mid,nx,ny
+    nx=size(tab%xlist)
+    ny=size(tab%ylist)
+    if (tab%xuniform) then
+        i=1+int(floor((x-tab%xlist(1))*tab%dx_inv))
+        if (i<1) i=1
+        if (i>nx-1) i=nx-1
+        do while (x<=tab%xlist(i) .and. i>1)
+            i=i-1
+        end do
+        do while (x>tab%xlist(i+1) .and. i<nx-1)
+            i=i+1
+        end do
+    else
+        lo=1
+        hi=nx
+        do while (hi-lo>1)
+            mid=(lo+hi)/2
+            if (x>tab%xlist(mid)) then
+                lo=mid
+            else
+                hi=mid
+            end if
+        end do
+        i=lo
+        if (x<=tab%xlist(1)) i=1
+        if (x>tab%xlist(nx)) i=nx-1
+    end if
+    if (tab%yuniform) then
+        j=1+int(floor((y-tab%ylist(1))*tab%dy_inv))
+        if (j<1) j=1
+        if (j>ny-1) j=ny-1
+        do while (y<=tab%ylist(j) .and. j>1)
+            j=j-1
+        end do
+        do while (y>tab%ylist(j+1) .and. j<ny-1)
+            j=j+1
+        end do
+    else
+        lo=1
+        hi=ny
+        do while (hi-lo>1)
+            mid=(lo+hi)/2
+            if (y>tab%ylist(mid)) then
+                lo=mid
+            else
+                hi=mid
+            end if
+        end do
+        j=lo
+        if (y<=tab%ylist(1)) j=1
+        if (y>tab%ylist(ny)) j=ny-1
+    end if
+    val=(tab%t2d(i,j)*(tab%xlist(i+1)-x)*(tab%ylist(j+1)-y)+&
+    tab%t2d(i+1,j)*(x-tab%xlist(i))*(tab%ylist(j+1)-y)+&
+    tab%t2d(i,j+1)*(tab%xlist(i+1)-x)*(y-tab%ylist(j))+&
+    tab%t2d(i+1,j+1)*(x-tab%xlist(i))*(y-tab%ylist(j)))/&
+    ((tab%xlist(i+1)-tab%xlist(i))*(tab%ylist(j+1)-tab%ylist(j)))
+end subroutine fld_kappa_interp_2d
 
 function fld_rosseland_opacity_interp(rho,tgas)
     real(8) :: rho,pres,tgas,fld_rosseland_opacity_interp,logrho,logpres,logtgas,kappa1,kappa2,kappa
@@ -168,16 +283,14 @@ function fld_rosseland_opacity_interp(rho,tgas)
         if (tgas<=1500d0) then
             !use dust table
             logrho=min(max(logrho,-18d0),-8d0)
-            call interpolation2d_linear(logtgas,logrho,kappa1,rosseland_dust_opacity_table%xlist,rosseland_dust_opacity_table%ylist,  &
-                rosseland_dust_opacity_table%t2d)
+            call fld_kappa_interp_2d(rosseland_dust_opacity_table,logtgas,logrho,kappa1)
         else
             kappa1=-10d0
         end if
         if (tgas>=1100d0) then
             !use gas table
             logpres=max(logpres,-9d0)
-            call interpolation2d_linear(logtgas,logpres,kappa2,rosseland_gas_opacity_table%xlist,rosseland_gas_opacity_table%ylist,  &
-                rosseland_gas_opacity_table%t2d)
+            call fld_kappa_interp_2d(rosseland_gas_opacity_table,logtgas,logpres,kappa2)
         else
             kappa2=-10d0
         end if
@@ -207,16 +320,14 @@ function fld_planck_opacity_interp_trad(rho,Erad,tgas)
         if (trad<1500d0) then
             !use dust table
             logrho=min(max(logrho,-18d0),-8d0)
-            call interpolation2d_linear(logtrad,logrho,kappa1,planck_dust_opacity_table%xlist,planck_dust_opacity_table%ylist,  &
-                planck_dust_opacity_table%t2d)
+            call fld_kappa_interp_2d(planck_dust_opacity_table,logtrad,logrho,kappa1)
         else
             kappa1=-10d0
         end if
         if (trad>1100d0) then
             !use gas table
             logpres=max(logpres,-9d0)
-            call interpolation2d_linear(logtrad,logpres,kappa2,planck_gas_opacity_table%xlist,planck_gas_opacity_table%ylist,  &
-                planck_gas_opacity_table%t2d)
+            call fld_kappa_interp_2d(planck_gas_opacity_table,logtrad,logpres,kappa2)
         else
             kappa2=-10d0
         end if
@@ -390,11 +501,9 @@ subroutine calculate_fld_conductivity_1d(blk)
     type(blockdef), pointer :: blk
     real(8) :: x1,x2,xi,dx,Erad_l,Erad_u,sigma_l,sigma_u
     integer :: i,j
-    do i=1,np_nblk(rank+1)
-        call fld_conductivity_left(blk)
-        call fld_conductivity_interior(blk)
-        call fld_conductivity_right(blk)
-    end do
+    call fld_conductivity_left(blk)
+    call fld_conductivity_interior(blk)
+    call fld_conductivity_right(blk)
 end subroutine calculate_fld_conductivity_1d
 
 subroutine fld_conductivity_left(blk)

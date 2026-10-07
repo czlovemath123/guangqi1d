@@ -7,6 +7,7 @@ gmon.out
 analysis.txt
 result.txt
 temp.data
+*.tex
 
 # generated run outputs
 history.data
@@ -32,3 +33,7 @@ modules/*/*/
 
 # agent tooling state
 .zcode/
+
+# dependency bundle built by install_deps.sh + its source tarballs
+guangqi-deps/
+*.tar.gz

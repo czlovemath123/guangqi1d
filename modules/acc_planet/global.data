@@ -41,7 +41,7 @@ $global_parameters
     blk_size_ny=1                           !block size in y coordinate
     maw=2.29d0                              !mean atomic weight of gamma-law gas
     gamma_gas=1.44d0                        !gamma-law gas
-    path_tables='/path/to/guangqi1d/tables/opacity'
+    path_tables='/home/zhuo/git/guangqi1d_merge/tables/opacity'
 /
 $refinement
     refine_xmin=1d0                      !x_min of this refinement zone

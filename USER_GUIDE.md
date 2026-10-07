@@ -26,26 +26,37 @@ module at a time through the `modules/problem` symlink.
 
 ## Prerequisites
 
-- **gfortran** with **OpenMPI** (`mpif90`, `mpiexec`)
+- **gfortran**, **make**, **cmake** (HDF5 2.x), **python3**
 - **PETSc** built with Fortran support (used for the implicit radiation solver)
 - **HDF5** with Fortran bindings (parallel output)
 - **LAPACK / BLAS**
 - **Python 3** for the helper/analysis scripts (numpy, matplotlib)
 
-The `Makefile` contains machine paths that you likely need to set. They
-default to placeholders and can be overridden via environment variables or on
-the make command line:
+### One-command dependency install (no root, no system MPI needed)
 
-```make
-PETSC_DIR ?= /path/to/petsc        # your PETSc installation (required)
-HDF5      ?= /usr/local/hdf5       # your HDF5 installation
-openmpi   ?= /usr/local/openmpi    # your OpenMPI installation
+`./install_deps.sh` builds everything above from source tarballs — including
+OpenMPI — into a single prefix `guangqi-deps/` inside the repository. Place the
+tarballs (`openmpi-5.0.11.tar.gz`, `hdf5-2.1.1.tar.gz`, `petsc-3.26.0.tar.gz`,
+`lapack-3.12.1.tar.gz`; version-less `hdf5.tar.gz` etc. also work) in the repo
+root or a directory pointed to by `GUANGQI_SRC`, then:
+
+```bash
+./install_deps.sh              # options: --prefix DIR, --jobs N, --force
+source env.sh                  # puts guangqi-deps/bin,lib on PATH/LD_LIBRARY_PATH
 ```
 
-so e.g. `export PETSC_DIR=$HOME/opt/petsc` once, and both `make` and
-`abao.py run` (which honors `PETSC_DIR`, `HDF5_DIR`, `OPENMPI_DIR`) pick it
-up. `make` fails with a clear error if `PETSC_DIR` does not point at a PETSc
-installation.
+Missing tarballs are downloaded automatically as a fallback. The `Makefile`
+picks up all paths from `guangqi-deps/` by default; to point it at a different
+prefix, run `make DEPS_DIR=/path/to/deps` (or export `GUANGQI_DEPS`).
+
+If you prefer to use already-installed libraries instead, edit the three
+`DEPS_DIR`/`PETSC_DIR`/`HDF5`/`openmpi` lines in the `Makefile`:
+
+```make
+PETSC_DIR = /home/zhuo/petsc       # your PETSc installation
+HDF5      = /usr/local/hdf5        # your HDF5 installation
+openmpi   = /usr/local/openmpi     # your OpenMPI installation
+```
 
 `makefiles/makefile.rmhd.gfortran` shows a complete example of a gfortran
 configuration.
@@ -177,6 +188,6 @@ archives the outputs with `rename.py`.
 ## Post-processing
 
 Python utilities live in `scripts/` (`eos.py`, `phy_const.py`,
-`table_gen.py`, `assemble_1d_data.py`, ...) and in each module (e.g.
+`assemble_1d_data.py`, ...) and in each module (e.g.
 `modules/lrne/kippenhahn2.py` for Kippenhahn diagrams). The HDF5 frames are
 best visualized with ParaView through the generated `.xdmf` files.

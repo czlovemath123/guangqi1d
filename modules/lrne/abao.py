@@ -1,4 +1,4 @@
-"""abao.py -- low/high-speed lrne example driver for guangqi1d.
+"""abao.py -- low/high-speed lrne example driver for guangqi1d_merge.
 
 Lives in modules/lrne and manages two complete run directories,
 lowspeed/ and highspeed/ (created next to this script), from setup to
@@ -21,16 +21,15 @@ post-processing:
     all      init -> run -> bc -> lc -> rhol -> vhist -> escmass
 
 Typical session:
-    <venv>/bin/python abao.py init
-    <venv>/bin/python abao.py run
-    <venv>/bin/python abao.py bc
-    <venv>/bin/python abao.py lc
-    <venv>/bin/python abao.py rhol
-    <venv>/bin/python abao.py vhist
-    <venv>/bin/python abao.py escmass
+    /home/zhuo/git/myenv/bin/python abao.py init
+    /home/zhuo/git/myenv/bin/python abao.py run
+    /home/zhuo/git/myenv/bin/python abao.py bc
+    /home/zhuo/git/myenv/bin/python abao.py lc
+    /home/zhuo/git/myenv/bin/python abao.py rhol
+    /home/zhuo/git/myenv/bin/python abao.py vhist
+    /home/zhuo/git/myenv/bin/python abao.py escmass
 or simply:
-    <venv>/bin/python abao.py all
-(<venv> is any Python 3 environment with numpy and matplotlib.)
+    /home/zhuo/git/myenv/bin/python abao.py all
 """
 import argparse
 import importlib.util
@@ -48,7 +47,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import FixedLocator, FuncFormatter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.normpath(os.path.join(HERE, '..', '..'))       # this repository
+REPO = os.path.normpath(os.path.join(HERE, '..', '..'))       # guangqi1d_merge
 SCRIPTS = os.path.join(REPO, 'scripts')
 MODULE_LRNE = os.path.join(REPO, 'modules', 'lrne')
 DEFAULT_BINARY = os.path.join(REPO, 'guangqi')
@@ -68,9 +67,10 @@ CASES = [
          label='high-speed', color='#d62728', shift=23.6),
 ]
 
-# Run configuration, mirroring the archived m8sub/m8sup model03000 campaign
-# (identical for both cases; only bcinput.dat differs). path_tables points at
-# this repository's own opacity tables.
+# Run configuration, mirroring lrne1d/m8sub*/model03000 (identical for both
+# cases; only bcinput.dat differs). path_tables points at the merged repo's
+# own tables, which are identical to the /media/zhuo/enceladus ones the
+# archived campaign used.
 DEFAULT_TABLES = os.path.join(REPO, 'tables', 'opacity')
 GLOBAL_DATA = {
     'meshinfo': {
@@ -229,15 +229,10 @@ def ensure_lrne_build(force=False, binary=DEFAULT_BINARY):
 def cmd_run(args):
     ensure_lrne_build(force=args.rebuild, binary=args.binary)
     env = dict(os.environ)
-    # Shared-library roots; override via the environment just like the Makefile
-    # (PETSC_DIR, HDF5_DIR, OPENMPI_DIR). Non-existent roots are skipped.
-    lib_roots = (os.environ.get('HDF5_DIR', '/usr/local/hdf5'),
-                 os.environ.get('PETSC_DIR', '/usr/local/petsc'),
-                 os.environ.get('OPENMPI_DIR', '/usr/local/openmpi'))
-    extra_lib = [os.path.join(p, 'lib') for p in lib_roots
-                 if os.path.isdir(os.path.join(p, 'lib'))]
+    # The deps bundle built by ./install_deps.sh is the only supported setup.
     env['LD_LIBRARY_PATH'] = os.pathsep.join(
-        extra_lib + [env.get('LD_LIBRARY_PATH', '')]).rstrip(os.pathsep)
+        [os.path.join(REPO, 'guangqi-deps', 'lib'),
+         env.get('LD_LIBRARY_PATH', '')]).rstrip(os.pathsep)
     for case in CASES:
         d = os.path.join(HERE, case['folder'])
         if not os.path.isfile(os.path.join(d, 'bcinput.dat')):

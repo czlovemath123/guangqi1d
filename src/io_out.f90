@@ -91,7 +91,12 @@ end subroutine calculate_output_data
 
 subroutine dsetname_filename()
     character(len=32) :: filename2
+    logical :: ex
     integer :: i
+    ! create the output directory if missing: the chdir below would silently
+    ! fail otherwise and every frame would land in the run directory
+    inquire(file=trim(path_out), exist=ex)
+    if (.not. ex) call execute_command_line('mkdir -p "'//trim(path_out)//'"')
     call chdir(path_out)
     open(unit=14,file=trim(path_root)//'/output_var_info.dat',status='old',action='read')
     read(unit=14,fmt=*) output_var_number
